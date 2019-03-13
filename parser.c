@@ -895,11 +895,14 @@ bool initTree(){
 
         }
     }
-
+    if(t.lexeme!=NULL){
+        //free last lexeme not used
+        free(t.lexeme);
+    }
     while(n!=NULL){
         //drain stack
-        if(n->tree->lexeme!=NULL){
-            free(n->tree->lexeme);
+        if(n->tree->parent.is_leaf && n->tree->parent.data.term == $){
+            free(n->tree);
         }
         free(n);
         n=pop();
@@ -914,7 +917,7 @@ void tempprinttree(struct narytree * n,enum nonterminal parent);
 void tempprintnode(struct narytree *n,enum nonterminal parent);
 
 void tempprintcurr(struct narytree *n,enum nonterminal parent){
-    // char * sym;
+
     if(n->line ==-1){
         return;
     }
@@ -968,19 +971,18 @@ void tempprintcurr(struct narytree *n,enum nonterminal parent){
 
 
 void tempprintnode(struct narytree *n,enum nonterminal parent){
-    // char *sym;
+    
+    struct narytree * temp = NULL;
     if(n->children !=NULL){
-    tempprintnode(n->children,n->parent.data.nonterm);
+        temp = n->children->next;
+        tempprintnode(n->children,n->parent.data.nonterm);
     }
-
     //print current
     tempprintcurr(n,parent);
 
-    // print children
-    if(n->children!=NULL){
-        if(n->children->next!=NULL){
-            tempprinttree(n->children->next,n->parent.data.nonterm);
-        }
+    // print remaining children
+    if(temp!=NULL){
+        tempprinttree(temp,n->parent.data.nonterm);
     }
 
     free(n);
@@ -991,20 +993,20 @@ void tempprintnode(struct narytree *n,enum nonterminal parent){
 
 
 void tempprinttree(struct narytree * n,enum nonterminal parent){
-    // char *sym;
+
+    struct narytree * temp = NULL;
     if(n->children !=NULL){
+        temp = n->children->next;
         tempprintnode(n->children,n->parent.data.nonterm);
     }
     //print current
     tempprintcurr(n,parent);
 
-    // print children
-    if(n->children!=NULL){
-        if(n->children->next!=NULL){
-            tempprinttree(n->children->next,n->parent.data.nonterm);
-        }
+    // print remaining children
+    if(temp!=NULL){
+        tempprinttree(temp,n->parent.data.nonterm);
     }
-//print next nodes
+    //print next nodes
     if(n->next!=NULL){
         tempprinttree(n->next,parent);
     }
@@ -1012,9 +1014,7 @@ void tempprinttree(struct narytree * n,enum nonterminal parent){
     free(n);
 }
 
-//
 void printTree(FILE * file){
     out = file;
     tempprinttree(parseTree,-1);
 }
-
