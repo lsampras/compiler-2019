@@ -23,4 +23,4 @@ debug: lexer.c lexerDef.h lexer.h parser.c parserDef.h parser.h driver.c clean
 	gcc -ggdb3 -std=c99 -o stage1exe parser.o lexer.o driver.o
 
 memcheck: testcase1.txt debug
-	valgrind --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=20 --track-fds=no ./stage1exe ../testcase4.txt ../a.txt 
+	valgrind --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=20 --track-fds=no ./stage1exe testcase1.txt a.txt 

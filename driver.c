@@ -90,6 +90,27 @@ int main(int argc,char ** argv){
                 printf("total_CPU_time_in_seconds %f\n",total_CPU_time_in_seconds);
                 break;
 
+            case 9://debug
+                in = fopen(argv[1],"rb");
+                parsetree = fopen(argv[2],"wb");
+                getStream(in);
+                seedHashTable();
+                seedSymbolTable();
+                readGrammar("grammar.txt");
+                ComputeFirstAndFollowSets();
+                printFirstFollow();
+                initParseTable();
+                initTree();
+                printTree(parsetree);
+                freeHashTable();
+                freesymbolTable();
+                freeGrammar();
+                fclose(parsetree);
+                fclose(in);
+                break;
+
+
+
             default:
                 printf("invalid option.Try again\n");
                 
