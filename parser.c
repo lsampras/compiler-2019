@@ -156,7 +156,7 @@ bool checkSet(set s, enum tok t)
 
 //STACK funcs
 
-struct narytree *createChild(llNode n)
+struct narytree *createChild(llNode n,struct narytree* parnode)
 {
     //create stack node from grammar node
     struct narytree *a = NULL;
@@ -173,6 +173,7 @@ struct narytree *createChild(llNode n)
             a->children = NULL;
             a->lexeme = NULL;
             a->line = -1;
+            a->parnode = parnode;
             continue;
         }
         temp->next = (struct narytree *)malloc(sizeof(struct narytree));
@@ -182,6 +183,7 @@ struct narytree *createChild(llNode n)
         temp->lexeme = NULL;
         temp->line = -1;
         temp->parent = n->node;
+        temp->parnode = parnode;
         n = n->next;
     }
     return a;
@@ -664,7 +666,7 @@ void freesymbolTable()
 
 //parse tree funcs
 
-bool initTree()
+struct narytree * initTree()
 {
     //push
     stackNode n = (stackNode)malloc(sizeof(struct StackNode));
@@ -684,6 +686,7 @@ bool initTree()
     n->tree->lexeme = NULL;
     n->tree->next = NULL;
     n->tree->children = NULL;
+    // n->tree->rule = 1;
     stack = push(stack, n);
 
     token t = getNextToken();
@@ -773,6 +776,8 @@ bool initTree()
                 n->tree->line = t.line_no;
                 n->tree->lexeme = t.lexeme;
                 n->tree->children = NULL;
+                n->tree->ast = NULL;
+                n->tree->rule = 0;
                 t = getNextToken();
                 free(n);
                 n = pop();
@@ -894,10 +899,11 @@ bool initTree()
             if (rule >= 0)
             {
                 llNode temp = g[rule].prod;
-                n->tree->children = createChild(temp);
+                n->tree->children = createChild(temp,n->tree);
                 stack = pushChildren(stack, n->tree->children);
                 n->tree->line = t.line_no;
-
+                n->tree->ast = NULL;
+                n->tree->rule = rule+1;
                 free(n);
                 n = pop();
             }
@@ -909,11 +915,14 @@ bool initTree()
                     if (rule >= 0)
                     {
                         llNode temp = g[rule].prod;
-                        n->tree->children = createChild(temp);
+                        n->tree->children = createChild(temp,n->tree);
                         n->tree->line = t.line_no;
+                        n->tree->ast = NULL;
+                        n->tree->rule = rule+1;
 
                         //since eps will not be put in stack we need to assign values now
                         n->tree->children->line = t.line_no;
+                        n->tree->children->rule = 0;
 
                         free(n);
                         n = pop();
@@ -1042,7 +1051,7 @@ bool initTree()
         free(n);
         n = pop();
     }
-    return success;
+    return parseTree;
 }
 
 void tempprinttree(struct narytree *n, enum nonterminal parent);

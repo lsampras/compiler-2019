@@ -13,7 +13,7 @@ void ComputeFirstAndFollowSets();
 void initParseTable();
 void printTree(FILE * a);
 void printFirstFollow();
-bool initTree();
+struct narytree* initTree();
 void readGrammar(char * file);
 void freesymbolTable();
 void freeGrammar();

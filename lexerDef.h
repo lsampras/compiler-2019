@@ -73,6 +73,61 @@ enum tok {
     $
 };
 
+enum nonterminal{
+    program,
+    mainFunction,
+    otherFunctions,
+    function,
+    input_par,
+    output_par,
+    parameter_list,
+    dataType,
+    primitiveDatatype,
+    constructedDatatype,
+    remaining_list,
+    stmts,
+    typeDefinitions,
+    typeDefinition,
+    fieldDefinitions,
+    fieldDefinition,
+    moreFields,
+    declaration,
+    declarations,
+    global_or_not,
+    otherStmts,
+    stmt,
+    assignmentStmt,
+    singleOrRecId,
+    new_24,
+    funCallStmt,
+    outputParameters,
+    inputParameters,
+    iterativeStmt,
+    conditionalStmt,
+    elsePart,
+    ioStmt,
+    allVar,
+    newVar,
+    arithmeticExpression,
+    expPrime,
+    term,
+    termPrime,
+    factor,
+    highPrecedenceOperator,
+    lowPrecedenceOperator,
+    all,
+    temp,
+    booleanExpression,
+    var,
+    logicalOp,
+    relationalOp,
+    returnStmt,
+    optionalReturn,
+    idList,
+    more_ids
+};
+
+
 
 struct token{
     enum tok type;
@@ -80,6 +135,15 @@ struct token{
     int line_no;
 };
 
+
+struct node{
+    bool is_leaf;
+    union {
+        enum nonterminal nonterm;
+        enum tok term;
+    }data;
+    
+};
 
 
 typedef struct token token;

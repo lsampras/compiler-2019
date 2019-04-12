@@ -6,6 +6,8 @@
 #include<stdio.h>
 #include"lexer.h"
 #include"parser.h"
+#include"ast.h"
+#include"symtable.h"
 #include <time.h>
 int main(int argc,char ** argv){
 
@@ -58,7 +60,7 @@ int main(int argc,char ** argv){
                 initTree();
                 printTree(parsetree);
                 freeHashTable();
-                freesymbolTable();
+                freesymbolTable();//i mean nonterminal table
                 freeGrammar();
                 fclose(parsetree);
                 fclose(in);
@@ -78,7 +80,7 @@ int main(int argc,char ** argv){
                 initTree();
                 printTree(parsetree);
                 freeHashTable();
-                freesymbolTable();
+                freesymbolTable();//i mean nonterminal table
                 freeGrammar();
                 fclose(parsetree);
                 fclose(in);
@@ -98,15 +100,22 @@ int main(int argc,char ** argv){
                 seedSymbolTable();
                 readGrammar("grammar.txt");
                 ComputeFirstAndFollowSets();
-                printFirstFollow();
                 initParseTable();
-                initTree();
+                struct narytree* p = initTree();
+                struct astNode ast = initAST(p);
+
+
+                firstPass(&ast);
+                printrecordtable();
+
                 printTree(parsetree);
                 freeHashTable();
-                freesymbolTable();
+                freesymbolTable();//i mean nonterminal table
                 freeGrammar();
                 fclose(parsetree);
                 fclose(in);
+                break;
+
                 break;
 
 
