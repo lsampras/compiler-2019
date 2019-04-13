@@ -22,14 +22,11 @@ struct astNode{
 
 	struct astNode* next; 
 	//For symbol Table
-	IdTable* current_scope;
+	IdTable current_scope;
 	int line_no;
 
 	char* lex;//for leaf
-    char * rectype;//subtype if record
-	int ival;
-    float rval;
-    int width;
+    int offset;
     struct astNode* last_child;
     struct astNode* last_node;
 };

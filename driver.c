@@ -108,6 +108,10 @@ int main(int argc,char ** argv){
                 firstPass(&ast);
                 printrecordtable();
 
+                secondPass(&ast);
+                printGlobalTable();
+
+                thirdPass(&ast);
                 printTree(parsetree);
                 freeHashTable();
                 freesymbolTable();//i mean nonterminal table

@@ -22,12 +22,15 @@ astnode createAstLeafNode(struct narytree* parsetree){
     node->current_scope = NULL;
     node->line_no = parsetree->line;
     node->lex = clone(parsetree->lexeme);
-    node->ival= -1;
+    // node->ival= -1;
     node->label = parsetree->parent;
     node->next = NULL;
     node->parent = NULL;
-    node->rectype = NULL;
-    node->rval  = -1;
+    node->last_child=NULL;
+    node->last_node = NULL;
+    node->offset = -1;
+    // node->rectype = NULL;
+    // node->rval  = -1;
     // parsetree->ast = node;
     return node;
 }
@@ -38,12 +41,15 @@ astnode createAstNonleafNode(struct narytree* parsetree){
     node->current_scope = NULL;
     node->line_no = -1;
     node->lex = NULL;
-    node->ival= -1;
+    // node->ival= -1;
     node->label = parsetree->parent;
     node->next = NULL;
     node->parent = NULL;
-    node->rectype = NULL;
-    node->rval  = -1;
+    node->last_child=NULL;
+    node->last_node = NULL;
+    node->offset = -1;
+    // node->rectype = NULL;
+    // node->rval  = -1;
     // parsetree->ast = node;
     return node;
 }
@@ -67,7 +73,7 @@ astnode converthelper(struct narytree * tree){
                     case 70:{
                         astnode a = createAstLeafNode(tree->children->children);
                         if(tree->children->children->next->rule == 71){
-                            a->next = createAstLeafNode(tree->children->children->next->children->next);
+                            a->children = createAstLeafNode(tree->children->children->next->children->next);
                         }
                         return a;
                     }
@@ -212,12 +218,12 @@ void processAstNode(struct narytree *parsetree){
         case 9:{
             //form a list of datatype&ids
             //and return concat list from other with func
-            parsetree->ast = createAstNonleafNode(parsetree);//parameter list
-            parsetree->ast->children = parsetree->children->ast;//raised DATATYPE 
-            parsetree->ast->children->next = createAstLeafNode(parsetree->children->next);//TKID
-            parsetree->ast->children->last_node = parsetree->ast->children->next;//set last node for child
+            // parsetree->ast = createAstNonleafNode(parsetree);//parameter list
+            parsetree->ast = parsetree->children->ast;//raised DATATYPE 
+            parsetree->ast->next = createAstLeafNode(parsetree->children->next);//TKID
+            // parsetree->ast->last_node = parsetree->ast->children->next;//set last node for child
             //get next node from remaining list
-            parsetree->ast->next = parsetree->children->next->next->ast;
+            parsetree->ast->next->next = parsetree->children->next->next->ast;
             if(parsetree->children->next->ast == NULL){
                 parsetree->ast->last_node = parsetree->children->ast;
             }else
@@ -229,7 +235,8 @@ void processAstNode(struct narytree *parsetree){
         }
 
         case 14:{
-            parsetree->ast = createAstLeafNode(parsetree->children->next);
+            parsetree->ast = createAstLeafNode(parsetree->children);
+            parsetree->ast->children = createAstLeafNode(parsetree->children->next);
             break;
         }
         case 15:{
@@ -354,7 +361,7 @@ void processAstNode(struct narytree *parsetree){
             parsetree->ast->children->next = parsetree->children->next->ast;
             break;
         }
-
+ 
         case 39:{
             parsetree->ast = createAstLeafNode(parsetree->children->next);
             break;
@@ -417,7 +424,7 @@ void processAstNode(struct narytree *parsetree){
         }
 
         case 51:{
-            parsetree->ast  = createAstLeafNode(parsetree);
+            parsetree->ast  = createAstNonleafNode(parsetree);
             parsetree->ast->children = createAstLeafNode(parsetree->children);
             parsetree->ast->children->next = parsetree->children->next->ast;
             break;
@@ -462,16 +469,16 @@ void processAstNode(struct narytree *parsetree){
 
         case 74:{
             parsetree->ast = createAstLeafNode(parsetree->children->next->children);//relop
-            parsetree->ast->children = createAstLeafNode(parsetree->children->children);//1st var
-            parsetree->ast->children->next = createAstLeafNode(parsetree->children->next->next->children);//2nd var
+            parsetree->ast->children = parsetree->children->ast;//1st var
+            parsetree->ast->children->next = parsetree->children->next->next->ast;//2nd var
             break;
         }
 
 
         case 75:{
-            parsetree->ast = createAstNonleafNode(parsetree);
-            parsetree->ast->children = createAstLeafNode(parsetree->children);
-            parsetree->ast->children->next = parsetree->children->next->next->ast;
+            // parsetree->ast = createAstNonleafNode(parsetree);
+            parsetree->ast = createAstLeafNode(parsetree->children);
+            parsetree->ast->children = parsetree->children->next->next->ast;
             break;
             
         }

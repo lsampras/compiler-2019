@@ -17,12 +17,14 @@ enum types{
 typedef struct recordtypenode{
     char * id;
     enum types type;
+    int offset;
 struct recordtypenode * next;
 } * Rec;
 
 typedef struct record{
     char * typeclass;
     Rec child;
+    int width;
     struct record * next;
 } * Rnode;
 
@@ -32,6 +34,7 @@ typedef struct record recTable;
 typedef struct idNode{
     enum types type;
     bool assigned;
+    bool updated;
     char * id;
     struct idNode * next;
     Rnode rec;//if record
@@ -40,17 +43,18 @@ typedef struct idNode{
 typedef struct parameterslist{
     struct parameterslist * next;
     enum types type;
+    Rnode rec;
 }* params;
 
 typedef idnode * IdTable;
 
 typedef struct symnode{
     char * id;
-    struct idnode* scope[IDSIZE];
+    IdTable scope;
     int width;
     params input;
     params output;
-    struct symnode* next;
+    struct symode * next;
 }* SymNode;
 
 typedef struct symnode SymTable;
