@@ -30,6 +30,20 @@ idnode checkId(char * id,IdTable scope){
         a = a->next;
     }
 }
+idnode checkIdGlobal(char * id){
+    unsigned long key = gethash(id);
+    key = key % IDSIZE;
+    idnode a = global[key];
+    while(1){
+        if(a == NULL){
+            return NULL;
+        }
+        if(strcmp(id,a->id)==0){
+            return a;
+        }
+        a = a->next;
+    }
+}
 
 enum types getIdType(char * id,IdTable scope){
     unsigned long key = gethash(id);
@@ -122,6 +136,16 @@ bool isRecSubType(Rnode rec,char* field){
         }
     }
     return false;
+}
+
+enum types getRecSubType(Rnode rec,char* field){
+    Rec temp = rec->child;
+    while(temp!=NULL){
+        if(strcmp(temp->id,field)==0){
+            return temp->type;
+        }
+    }
+    return -1;
 }
 
 
@@ -341,271 +365,6 @@ void secondPass(astnode root,ErrorList errors){
         temp = temp->next;
     }
     
-}
-void checkarithmetic(astnode arith,ErrorList errors,IdTable scope);
-void checkarithmetic(astnode arith,ErrorList errors,IdTable scope){
-    switch (arith->label.data.term)
-    {
-        case MUL:
-        case DIV:
-        case PLUS:
-        case MINUS:{
-            checkarithmetic(arith->children,errors,scope);
-            checkarithmetic(arith->children->next,errors,scope);
-        }
-        case ID:{
-            idnode temp = checkId(arith->lex,scope);
-            if(temp == NULL){
-                temp = checkId(arith->lex,global);
-            }
-            if(temp==NULL){
-                //error handling
-            }else{
-                if(temp->type == RECORDT){
-                    if(!isRecSubType(temp->rec,arith->children->lex)){
-                        //invalid rec subfield
-                    }
-                }
-            }
-        }
-    
-        default:
-            break;
-    }
-}
-
-void clearBoolUpdateFlag(astnode booleanexp,IdTable scope);
-void clearBoolUpdateFlag(astnode booleanexp,IdTable scope){
-    switch(booleanexp->label.data.term){
-        case AND:
-        case OR:
-        {
-            clearBoolUpdateFlag(booleanexp->children,scope);
-            clearBoolUpdateFlag(booleanexp->children->next,scope);
-            break;
-        }
-        case NOT:{
-            clearBoolUpdateFlag(booleanexp->children,scope);
-            break;
-        }
-        case LT:
-        case LE:
-        case EQ:
-        case GT:
-        case GE:
-        case NE:{
-            idnode a = NULL;
-            if(booleanexp->children->label.data.term == ID){
-                a = checkId(booleanexp->children->lex,scope);
-                if(a == NULL){
-                    a = checkId(booleanexp->children->lex,global);
-                }
-                if(a!=NULL){
-                    a->updated = false;
-                }
-            }
-            if(booleanexp->children->next->next->label.data.term == ID){
-                a = checkId(booleanexp->children->next->next->lex,scope);
-                if(a == NULL){
-                    a = checkId(booleanexp->children->next->next->lex,global);
-                }
-                if(a!=NULL){
-                    a->updated = false;
-                }
-            }
-        }
-    }
-}
-
-bool checkBoolStmts(astnode boolexp,ErrorList errors,IdTable scope);
-bool checkBoolStmts(astnode boolexp,ErrorList errors,IdTable scope){
-    bool b1 = false;
-    bool b2 = false;
-    switch(boolexp->label.data.term){
-        case AND:
-        case OR:
-        {
-            b1 = checkBoolStmts(boolexp->children,errors,scope);
-            b2 = checkBoolStmts(boolexp->children->next,errors,scope);
-            return b1||b2;
-            break;
-        }
-        case NOT:{
-            return checkBoolStmts(boolexp->children,errors,scope);
-            break;
-        }
-        case LT:
-        case LE:
-        case EQ:
-        case GT:
-        case GE:
-        case NE:{
-            idnode a = NULL;
-            if(boolexp->children->label.data.term == ID){
-                a = checkId(boolexp->children->lex,scope);
-                if(a == NULL){
-                    a = checkId(boolexp->children->lex,global);
-                }
-                if(a==NULL){
-                    //undeclared var
-                }
-                b1 = a->updated;
-            }
-            if(boolexp->children->next->next->label.data.term == ID){
-                a = checkId(boolexp->children->next->next->lex,scope);
-                if(a == NULL){
-                    a = checkId(boolexp->children->next->next->lex,global);
-                }
-                if(a==NULL){
-                    //undeclared var
-                }
-                b2 = a->updated;
-            }
-            return b2 || b1;
-        }
-    }
-
-}
-bool checkparams(params p,astnode list){
-
-}
-
-void printSymbolTable();
-void checkStmtErr(astnode stmt,ErrorList errors,IdTable scope);
-void checkStmtErr(astnode stmt,ErrorList errors,IdTable scope){
-    if(stmt == NULL){
-        return;
-    }
-    idnode temp;
-    switch(stmt->label.data.nonterm){
-        case assignmentStmt:{
-            temp = checkId(stmt->children->children->lex,scope);//RHS
-            if (temp == NULL){
-                temp = checkId(stmt->children->children->lex,global);
-                if(temp == NULL){
-                    //undefined var RHS
-                }
-            }
-            if(temp!=NULL && temp->type == RECORDT){
-                if(!isRecSubType(temp->rec,stmt->children->children->next->lex)){
-                    //invalid sub field
-                }
-            }
-            checkarithmetic(stmt->children->next,errors,scope);
-            if(temp!=NULL){
-                // temp->assigned = true;
-                temp->updated = true;
-            }
-            break;
-        }
-        case conditionalStmt:{
-            checkBoolStmts(stmt->children->children,errors,scope);//check bool
-            checkStmtErr(stmt->children->next->children,errors,scope);//check if part
-            checkStmtErr(stmt->children->next->next->children,errors,scope);//check else part
-            break;
-        }
-        case iterativeStmt:{
-            clearBoolUpdateFlag(stmt->children->children,scope);
-
-            checkStmtErr(stmt->children->next->children,errors,scope);
-
-            if(!checkBoolStmts(stmt->children->children,errors,scope)){
-                //value not updated
-            }
-
-
-
-            break;
-        }
-        case funCallStmt:{
-            SymNode s = getSymNode(stmt->children->next->lex);
-            if(s!=NULL){
-                if(!checkparams(s->input,stmt->children->next->next->children)){
-                    //output params not matching
-                }
-                if(!checkparams(s->output,stmt->children->children)){
-                    //input params not matching
-                }
-
-            }else{
-                //function not existing
-            }
-            break;
-        }
-
-
-        case ioStmt:{
-            if(stmt->children->label.is_leaf && stmt->children->label.data.term == WRITE){
-                if(stmt->children->next->label.is_leaf){
-                    if(stmt->children->next->label.data.term == NUM || stmt->children->next->label.data.term == RNUM ){
-                        //nothing to be done here
-                        break;
-                    }
-                    // if(stmt->children->next->label.data.term = ID)
-
-                }else
-                {
-                    if(stmt->children->next->label.data.nonterm = allVar ){
-                        temp = checkId(stmt->children->next->children->lex,scope);
-                        if(temp==NULL){
-                            temp = checkId(stmt->children->next->children->lex,global);
-                            // if(temp)
-                        }
-                        if(temp == NULL){
-                            //id does not exists
-                        }
-                        if(temp->type == RECORDT){
-                            if(stmt->children->next->children->next == NULL){
-                                //no recordsubtype (no error)
-                            }else{
-                                if(!isRecSubType(temp->rec,stmt->children->next->children->next->lex)){
-                                    //invalid rec sub type
-                                }
-                            }
-                        }
-                    }
-                }
-                
-            }
-            break;  
-        }
-        case returnStmt:{
-            astnode t = stmt->children;
-            while(t!=NULL){
-                if(!checkId(t->lex,scope)){
-                    if(!checkId(t->lex,global)){
-                        //id does not exist
-                    }
-                }
-                t = t->next;
-            }
-
-            break;
-        }
-        default:{
-            break;
-        }
-    }
-
-    checkStmtErr(stmt->next,errors,scope);
-}
-
-void thirdPass(astnode root,ErrorList errors){
-    astnode temp = root->children;
-    SymNode a = NULL;
-    while(temp!=NULL){
-        a = addToSymbolTable(temp,errors);
-        if(temp->label.data.nonterm = mainFunction){
-            checkStmtErr(temp->children->next->next->next->next->next->children,errors,a->scope);//other stmts
-            checkStmtErr(temp->children->next->next->next->next->next->next,errors,a->scope);//return stmt
-        }else{
-            checkStmtErr(temp->children->next->next->next->next->next->children,errors,a->scope);//other stmts
-            checkStmtErr(temp->children->next->next->next->next->next->next,errors,a->scope);//return stmt
-        }
-
-        temp = temp->next;
-    }
-    printSymbolTable();
 }
 
 void printrecord(Rnode record){

@@ -20,3 +20,9 @@ struct errorList{
 
 
 typedef struct errorList* ErrorList;
+
+typedef struct arithmethic_check{
+    enum types type;
+    bool isError;
+    Rnode rec;
+}arith_check;

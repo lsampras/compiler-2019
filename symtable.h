@@ -4,6 +4,6 @@ void firstPass(astnode root);
 void printrecordtable();
 void secondPass(astnode root);
 void printGlobalTable();
-void thirdPass(astnode root);
 void printIdTable(IdTable scope,char* id);
+enum types getRecSubType(Rnode rec,char* field)
 // void printGlobalTable();
