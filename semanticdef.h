@@ -1,3 +1,5 @@
+#ifndef SEMANTIC_DEF
+#define SEMANTIC_DEF
 
 #include"astdef.h"
 #include"symtabledef.h"
@@ -5,9 +7,10 @@
 #include<stdbool.h>
 #include"ast.h"
 
+#define MAX_ERROR_LENGTH 150
+
 
 struct error{
-    int line;
     char * error;
     struct error*next;
 };
@@ -26,3 +29,4 @@ typedef struct arithmethic_check{
     bool isError;
     Rnode rec;
 }arith_check;
+#endif

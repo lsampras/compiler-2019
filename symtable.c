@@ -5,6 +5,8 @@
 #include<stdbool.h>
 #include"ast.h"
 #include"semanticdef.h"
+#include"semantic.h"
+// #include"smantic.h"
 #define REALWIDTH 4
 #define INTWIDTH 2
 recTable *Records[RECSIZE];
@@ -12,9 +14,12 @@ SymTable *Symbols[SYMSIZE];
 struct idNode  *global[IDSIZE];
 
 
+Rnode checkRecords(char * recid);
+
 // Id Table funcs
 
 // global[IDSIZE] == NULL
+
 
 idnode checkId(char * id,IdTable scope){
     unsigned long key = gethash(id);
@@ -83,7 +88,13 @@ IdTable setAssigned(char * id,IdTable scope){
 }
 
 //RECORD funcs
-void addRecType(astnode record){
+void addRecType(astnode record,ErrorList errors){
+    if(checkRecords(record->children->lex)!=NULL){
+        char * buf = (char*)calloc(MAX_ERROR_LENGTH,sizeof(char));
+        sprintf(buf,"Line %d : Record of type <%s> already defined \n",record->children->line_no,record->children->lex);
+        reportError(errors,buf);
+        return;
+    }
     unsigned long hash =  gethash(record->children->lex);
     hash = hash%RECSIZE;
     Rnode rec = (Rnode)malloc(sizeof(struct record));
@@ -134,6 +145,7 @@ bool isRecSubType(Rnode rec,char* field){
         if(strcmp(temp->id,field)==0){
             return true;
         }
+        temp = temp->next;
     }
     return false;
 }
@@ -144,6 +156,7 @@ enum types getRecSubType(Rnode rec,char* field){
         if(strcmp(temp->id,field)==0){
             return temp->type;
         }
+        temp = temp->next;
     }
     return -1;
 }
@@ -164,6 +177,9 @@ void addToIdTable(IdTable scope,astnode var,ErrorList errors,int* offset){
 
     if(checkId(var->children->next->lex,scope) != NULL || checkId(var->children->next->lex,global)!=NULL){
         //error for duplicate var
+        char * buf = (char*)calloc(MAX_ERROR_LENGTH,sizeof(char));
+        sprintf(buf,"Line %d : variable <%s> already declared\n",var->children->next->line_no,var->children->next->lex);
+        reportError(errors,buf);
         return;
 
 
@@ -184,6 +200,10 @@ void addToIdTable(IdTable scope,astnode var,ErrorList errors,int* offset){
         node->rec = checkRecords(var->children->children->lex);
         if(node->rec==NULL){
             //handle type not existing error
+            char * buf = (char*)calloc(MAX_ERROR_LENGTH,sizeof(char));
+            sprintf(buf,"Line %d : Record type <%s> not defined\n",var->children->next->line_no,var->children->next->lex);
+            reportError(errors,buf);
+            return;
         }else{
             *offset = *offset + node->rec->width;
         }
@@ -205,8 +225,11 @@ params getParams(astnode list,IdTable scope,ErrorList errors,int * width,bool in
     if(list == NULL){
         return NULL;
     }
-    if(checkId(list->next->lex,scope)!=NULL){
+    if(checkId(list->next->lex,scope)!=NULL || checkId(list->next->lex,global)!=NULL){
         //handle duplicate
+        char * buf = (char*)calloc(MAX_ERROR_LENGTH,sizeof(char));
+        sprintf(buf,"Line %d : variable <%s> already declared\n",list->next->line_no,list->next->lex);
+        reportError(errors,buf);
     }
     idnode node = (idnode)malloc(sizeof(struct idNode));
     unsigned long hash = gethash(list->next->lex);
@@ -285,10 +308,14 @@ SymNode getSymNode(char * funid){
 }
 
 
-void addToGlobal(astnode var,int * offset){
+void addToGlobal(astnode var,int * offset,ErrorList errors){
 
     if(checkId(var->children->next->lex,global)!=NULL){
         //error for duplicate var
+        char * buf = (char*)calloc(MAX_ERROR_LENGTH,sizeof(char));
+        sprintf(buf,"Line %d : Global variable <%s> already declared \n",var->children->next->line_no,var->children->next->lex);
+        reportError(errors,buf);
+        return;
     }
     idnode node = (idnode)malloc(sizeof(struct idNode));
     unsigned long hash = gethash(var->children->next->lex);
@@ -305,6 +332,10 @@ void addToGlobal(astnode var,int * offset){
         node->rec = checkRecords(var->children->children->lex);
         if(node->rec==NULL){
             //handle type not existing error
+            char * buf = (char*)calloc(MAX_ERROR_LENGTH,sizeof(char));
+            sprintf(buf,"Line %d : Record type <%s> does not exist \n",var->children->children->line_no,var->children->children->lex);
+            reportError(errors,buf);
+            return;
         }else{
             *offset = *offset + node->rec->width;
         }
@@ -320,22 +351,22 @@ void addToGlobal(astnode var,int * offset){
     global[hash] = node;
 }
 
-void fillGlobaltable(astnode declarations){
+void fillGlobaltable(astnode declarations,ErrorList errors){
 //fill global variables
     astnode temp = declarations->children;
     int offset = 0;
     while(temp!=NULL){
         if(temp->children->next->next !=NULL){//Global node exists
-            addToGlobal(temp,&offset);
+            addToGlobal(temp,&offset,errors);
         }
         temp = temp->next;
     }
 }
-void fillRecordTypes(astnode typeddefinitions){
+void fillRecordTypes(astnode typeddefinitions,ErrorList errors){
 //fill record type table
     astnode record = typeddefinitions->children;
     while(record!=NULL){
-        addRecType(record);
+        addRecType(record,errors);
         record = record->next;
     }
 }
@@ -344,9 +375,9 @@ void firstPass(astnode root,ErrorList errors){
     astnode temp = root->children;
     while(temp!=NULL){
         if(!temp->label.is_leaf && temp->label.data.nonterm == function ){
-            fillRecordTypes(temp->children->next->next->next);
+            fillRecordTypes(temp->children->next->next->next,errors);
         }else if(!temp->label.is_leaf && temp->label.data.nonterm == mainFunction){
-            fillRecordTypes(temp->children);
+            fillRecordTypes(temp->children,errors);
         }
         temp = temp->next;
     }
@@ -358,9 +389,9 @@ void secondPass(astnode root,ErrorList errors){
     astnode temp = root->children;
     while(temp!=NULL){
         if(!temp->label.is_leaf && temp->label.data.nonterm == function ){
-            fillGlobaltable(temp->children->next->next->next->next);
+            fillGlobaltable(temp->children->next->next->next->next,errors);
         }else if(!temp->label.is_leaf && temp->label.data.nonterm == mainFunction){
-            fillGlobaltable(temp->children->next);
+            fillGlobaltable(temp->children->next,errors);
         }
         temp = temp->next;
     }

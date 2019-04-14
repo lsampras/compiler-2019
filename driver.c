@@ -8,6 +8,7 @@
 #include"parser.h"
 #include"ast.h"
 #include"symtable.h"
+#include"semantic.h"
 #include <time.h>
 int main(int argc,char ** argv){
 
@@ -105,13 +106,18 @@ int main(int argc,char ** argv){
                 struct astNode ast = initAST(p);
 
 
-                firstPass(&ast);
+                struct errorList errors;
+                errors.head = NULL;
+                errors.tail = NULL;
+                firstPass(&ast,&errors);
                 printrecordtable();
 
-                secondPass(&ast);
+                secondPass(&ast,&errors);
                 printGlobalTable();
-
-                thirdPass(&ast);
+                thirdPass(&ast,&errors);
+                if(errors.head != NULL){
+                    printErrors(&errors);
+                }
                 printTree(parsetree);
                 freeHashTable();
                 freesymbolTable();//i mean nonterminal table
