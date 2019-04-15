@@ -4,7 +4,200 @@
 #include"ast.h"
 
 struct astNode astroot;
+void printAST(astnode ast,astnode par);
+int astnode_count = 0;
+void printASTnode(astnode ast,astnode par);
+void printASTsingle(astnode ast,astnode par);
 
+int getastnodes(){
+    return astnode_count;
+}
+void printAST(astnode ast,astnode par){
+    if(ast==NULL){
+        return;
+    }
+    astnode temp  = NULL;
+    temp = ast->children;
+    if(temp != NULL){
+        printASTsingle(temp,ast);
+        temp = temp->next;
+    }
+    printASTnode(ast,par);
+    while(temp != NULL){
+        printAST(temp,ast);
+        temp = temp->next;
+    }
+    // printAST(ast->next,par);
+}
+
+void freeASTnode(astnode ast){
+    free(ast->lex);
+    free(ast);
+}
+void freeAST(astnode ast);
+void freeAST(astnode ast){
+    if(ast == NULL){
+        return;
+        astnode temp = ast->children;
+        while(temp!=NULL){
+            freeAST(temp);
+            temp = temp->next;
+        }
+    freeASTnode(ast);
+    }
+}
+
+
+void printASTsingle(astnode ast,astnode par){
+    if(ast==NULL){
+        return;
+    }
+    astnode temp  = NULL;
+    temp = ast->children;
+    if(temp != NULL){
+        printASTsingle(temp,ast);
+        temp = temp->next;
+    }
+    printASTnode(ast,par);
+    while(temp != NULL){
+        printAST(temp,ast);
+        temp = temp->next;
+    }
+}
+
+char *tokens2[] = {
+    "TK_ASSIGNOP",
+    "TK_COMMENT",
+    "TK_FIELDID",
+    "TK_ID",
+    "TK_NUM",
+    "TK_RNUM",
+    "TK_FUNID",
+    "TK_RECORDID",
+    "TK_WITH",
+    "TK_PARAMETERS",
+    "TK_END",
+    "TK_WHILE",
+    "TK_TYPE",
+    "TK_MAIN",
+    "TK_GLOBAL",
+    "TK_PARAMETER",
+    "TK_LIST",
+    "TK_SQL",
+    "TK_SQR",
+    "TK_INPUT",
+    "TK_OUTPUT",
+    "TK_INT",
+    "TK_REAL",
+    "TK_COMMA",
+    "TK_SEM",
+    "TK_COLON",
+    "TK_DOT",
+    "TK_ENDWHILE",
+    "TK_OP",
+    "TK_CL",
+    "TK_IF",
+    "TK_THEN",
+    "TK_ENDIF",
+    "TK_READ",
+    "TK_WRITE",
+    "TK_RETURN",
+    "TK_PLUS",
+    "TK_MINUS",
+    "TK_MUL",
+    "TK_DIV",
+    "TK_CALL",
+    "TK_RECORD",
+    "TK_ENDRECORD",
+    "TK_ELSE",
+    "TK_AND",
+    "TK_OR",
+    "TK_NOT",
+    "TK_LT",
+    "TK_LE",
+    "TK_EQ",
+    "TK_GT",
+    "TK_GE",
+    "TK_NE",
+    "LEX_ERROR",
+    "EPS",
+    "$"};
+
+char *symbols1[] = {
+    "program",
+    "mainFunction",
+    "otherFunctions",
+    "function",
+    "input_par",
+    "output_par",
+    "parameter_list",
+    "dataType",
+    "primitiveDatatype",
+    "constructedDatatype",
+    "remaining_list",
+    "stmts",
+    "typeDefinitions",
+    "typeDefinition",
+    "fieldDefinitions",
+    "fieldDefinition",
+    "moreFields",
+    "declaration",
+    "declarations",
+    "global_or_not",
+    "otherStmts",
+    "stmt",
+    "assignmentStmt",
+    "singleOrRecId",
+    "new24",
+    "funCallStmt",
+    "outputParameters",
+    "inputParameters",
+    "iterativeStmt",
+    "conditionalStmt",
+    "elsePart",
+    "ioStmt",
+    "allVar",
+    "newVar",
+    "arithmeticExpression",
+    "expPrime",
+    "term",
+    "termPrime",
+    "factor",
+    "highPrecedenceOperators",
+    "lowPrecedenceOperators",
+    "all",
+    "temp",
+    "booleanExpression",
+    "var",
+    "logicalOp",
+    "relationalOp",
+    "returnStmt",
+    "optionalReturn",
+    "idList",
+    "more_ids"};
+
+void printASTnode(astnode ast,astnode par){
+    char line[5] ;
+    char blank[] = "---";
+    char * type;
+    char* partype ;
+    char * lex ;
+    char offset[5];
+    if(ast->label.is_leaf){
+        sprintf(line,"%d",ast->line_no);
+        sprintf(offset,"%d",ast->offset);
+        type = tokens2[ast->label.data.term];
+        lex = ast->lex;
+    }else{
+        sprintf(line,"%s",blank);
+        sprintf(offset,"%s",blank);
+        type = symbols1[ast->label.data.nonterm];
+        lex = blank;
+
+    }
+
+    printf("%-4s  %-20s %-15s \n",line,type,lex);
+}
 char * clone(char* str){
     if(str == NULL){
         return NULL;
@@ -17,6 +210,7 @@ char * clone(char* str){
 
 astnode createAstLeafNode(struct narytree* parsetree){
     astnode node = (astnode) malloc(sizeof(struct astNode));
+    astnode_count++;
     // parsetree = parsetree->children;
     node->children = NULL;
     node->current_scope = NULL;
@@ -36,6 +230,7 @@ astnode createAstLeafNode(struct narytree* parsetree){
 }
 astnode createAstNonleafNode(struct narytree* parsetree){
     astnode node = (astnode) malloc(sizeof(struct astNode));
+    astnode_count++;
     // parsetree = parsetree->children;
     node->children = NULL;
     node->current_scope = NULL;
@@ -170,6 +365,10 @@ void processAstNode(struct narytree *parsetree){
             //raise other funcs and add main to it
             parsetree->ast = createAstNonleafNode(parsetree);
             parsetree->ast->children = parsetree->children->ast;
+            if(parsetree->ast->children == NULL){//only main func
+                parsetree-> ast->children = parsetree->children->next->ast;
+                break;
+            }
             parsetree->children->ast->last_node->next = parsetree->children->next->ast;
             parsetree->ast->children->last_node = parsetree->children->next->ast;
             break;
@@ -506,6 +705,7 @@ void generateTree(struct narytree*parseTree){
 }
 
 struct astNode initAST(struct narytree * parseTree){
+    astnode_count = 0;
     parseTree->ast = &astroot;
     generateTree(parseTree);
     return *(parseTree->ast);

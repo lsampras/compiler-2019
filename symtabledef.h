@@ -35,6 +35,7 @@ typedef struct idNode{
     enum types type;
     bool assigned;
     bool updated;
+    int offset;
     char * id;
     struct idNode * next;
     Rnode rec;//if record
@@ -54,7 +55,7 @@ typedef struct symnode{
     int width;
     params input;
     params output;
-    struct symode * next;
+    struct symnode * next;
 }* SymNode;
 
 typedef struct symnode SymTable;

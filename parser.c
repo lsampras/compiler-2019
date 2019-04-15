@@ -20,8 +20,9 @@ symbolnode *symbolTable[TABLESIZE];
 
 STACK stack;
 struct narytree *parseTree;
-FILE *out;
-set traversed;
+set traversed = false;
+bool success;
+int parsenode_count = 0;
 int parseTable[NONTERMINALCOUNT][TOKENCOUNT] = {0};
 // }
 char *tokens1[] = {
@@ -154,7 +155,13 @@ bool checkSet(set s, enum tok t)
     return (s & a) == a;
 }
 
+bool parseSuccess(){
+ return success;
+}
 //STACK funcs
+int getParsenodes(){
+    return parsenode_count;
+}
 
 struct narytree *createChild(llNode n,struct narytree* parnode)
 {
@@ -166,6 +173,7 @@ struct narytree *createChild(llNode n,struct narytree* parnode)
         if (a == NULL)
         {
             a = (struct narytree *)malloc(sizeof(struct narytree));
+            parsenode_count++;
             temp = a;
             a->parent = n->node;
             n = n->next;
@@ -177,6 +185,7 @@ struct narytree *createChild(llNode n,struct narytree* parnode)
             continue;
         }
         temp->next = (struct narytree *)malloc(sizeof(struct narytree));
+            parsenode_count++;
         temp = temp->next;
         temp->next = NULL;
         temp->children = NULL;
@@ -669,16 +678,20 @@ void freesymbolTable()
 struct narytree * initTree()
 {
     //push
+    success = true;
+    parsenode_count = 0;
     stackNode n = (stackNode)malloc(sizeof(struct StackNode));
     n->tree = (struct narytree *)malloc(sizeof(struct narytree));
+            parsenode_count++;
     n->tree->parent.is_leaf = true;
     n->tree->parent.data.term = $;
     n->next = NULL;
-    bool success = true;
+    
 
     stack = push(stack, n);
     n = (stackNode)malloc(sizeof(struct StackNode));
     n->tree = (struct narytree *)malloc(sizeof(struct narytree));
+            parsenode_count++;
     parseTree = n->tree;
     n->tree->parent.is_leaf = false;
     n->tree->parent.data.nonterm = program;
@@ -1042,7 +1055,7 @@ struct narytree * initTree()
         free(t.lexeme);
     }
     while (n != NULL)
-    {
+    {   
         //drain stack
         if (n->tree->parent.is_leaf && n->tree->parent.data.term == $)
         {
@@ -1103,7 +1116,7 @@ void tempprintcurr(struct narytree *n, enum nonterminal parent)
         {
             lexeme = tokenname;
         }
-        fprintf(out, "%-30s %d\t%-8s %-8s %-15s %-5s %-15s\n", lexeme, lineno, tokenname, value, parentsym, yesorno, nodesym);
+        printf( "%-30s %d\t%-8s %-8s %-15s %-5s %-15s\n", lexeme, lineno, tokenname, value, parentsym, yesorno, nodesym);
     }
     else
     {
@@ -1112,7 +1125,7 @@ void tempprintcurr(struct narytree *n, enum nonterminal parent)
         nodesym = symbols[n->parent.data.nonterm];
         yesorno = no;
         tokenname = a;
-        fprintf(out, "%-30s %s\t%-8s %-8s %-15s %-5s %-15s\n", lexeme, a, tokenname, value, parentsym, yesorno, nodesym);
+        printf("%-30s %s\t%-8s %-8s %-15s %-5s %-15s\n", lexeme, a, tokenname, value, parentsym, yesorno, nodesym);
     }
     if (n->parent.is_leaf)
     {
@@ -1170,12 +1183,35 @@ void tempprinttree(struct narytree *n, enum nonterminal parent)
     free(n);
 }
 
-void printTree(FILE *file)
-{
-    out = file;
+void printTree()
+{   //set a global FILE * in this file and use fprintf instead on printf to save output to file
     tempprinttree(parseTree, -1);
 }
 
 
 
+void freeparsenode(struct narytree *n){
+    if (n->parent.is_leaf)
+    {
+        if (n->parent.data.term != EPS)
+        {
+            free(n->lexeme);
+        }
+    }else if(n->parent.data.nonterm == program){
+        return;
+    }
+    free(n);
+}
+void freeparsetree(struct narytree *n);
+void freeparsetree(struct narytree *n){
+    if(n == NULL){
+        return;
+    }
+        struct narytree * temp = n->children;
+        while(temp!=NULL){
+            freeparsetree(temp);
+            temp = temp->next;
+        }
+    freeparsenode(n);
+}
 

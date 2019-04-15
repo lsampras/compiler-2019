@@ -275,7 +275,7 @@ bool checkBoolStmts(astnode boolexp,ErrorList errors,IdTable scope){
     }
 
 }
-bool checkparams(params p,astnode list,IdTable scope){
+bool checkparams(params p,astnode list,IdTable scope,ErrorList errors){
     if(p == NULL || list ==NULL){
         if(p==NULL && list ==NULL){
             return true;
@@ -283,7 +283,15 @@ bool checkparams(params p,astnode list,IdTable scope){
         return false;
     }
     idnode temp = checkId(list->lex,scope);
+    if(temp == NULL){
+        //params contains undeclared variables
+        char * buf = (char*)calloc(MAX_ERROR_LENGTH,sizeof(char));
+        sprintf(buf,"Line %d : undeclared variable <%s>  \n",list->line_no, list->lex);
+        reportError(errors,buf);
+        return true;
+    }
     if(temp->type != p->type){
+        // checkparams(p->next,list->next,scope);
         return false;
     }else{
         if(temp->type == RECORDT){
@@ -291,7 +299,7 @@ bool checkparams(params p,astnode list,IdTable scope){
                 return false;
             }
         }
-        return checkparams(p->next,list->next,scope);
+        return checkparams(p->next,list->next,scope,errors);
     }
 }
 
@@ -390,13 +398,13 @@ void checkStmtErr(astnode stmt,ErrorList errors,IdTable scope){
         case funCallStmt:{
             SymNode s = getSymNode(stmt->children->next->lex);
             if(s!=NULL){
-                if(!checkparams(s->input,stmt->children->next->next->children,scope)){
+                if(!checkparams(s->input,stmt->children->next->next->children,scope,errors)){
                     //input params not matching
                     char * buf = (char*)calloc(MAX_ERROR_LENGTH,sizeof(char));
                     sprintf(buf,"Line %d : Input parameters at function call for <%s> does not match\n",stmt->children->next->line_no,stmt->children->next->lex);
                     reportError(errors,buf);
                 }
-                if(!checkparams(s->output,stmt->children->children,scope)){
+                if(!checkparams(s->output,stmt->children->children,scope,errors)){
                     //output params not matching
                     char * buf = (char*)calloc(MAX_ERROR_LENGTH,sizeof(char));
                     sprintf(buf,"Line %d : Output parameters at function call for <%s> does not match\n",stmt->children->next->line_no,stmt->children->next->lex);
@@ -484,15 +492,19 @@ void thirdPass(astnode root,ErrorList errors){
     SymNode a = NULL;
     while(temp!=NULL){
         a = addToSymbolTable(temp,errors);
-        if(temp->label.data.nonterm = mainFunction){
+        if(temp->label.data.nonterm == mainFunction){
             checkStmtErr(temp->children->next->next->children,errors,a->scope);//other stmts
             checkStmtErr(temp->children->next->next->next,errors,a->scope);//return stmt
         }else{
             checkStmtErr(temp->children->next->next->next->next->next->children,errors,a->scope);//other stmts
-            checkStmtErr(temp->children->next->next->next->next->next->next,errors,a->scope);//return stmt
+            //check return params
+            if(!checkparams(a->output,temp->children->next->next->next->next->next->next->children,a->scope,errors)){
+                char * buf = (char*)calloc(MAX_ERROR_LENGTH,sizeof(char));
+                sprintf(buf,"Line %d : return stmt does not match with specified output parameters \n",temp->children->next->next->next->next->next->next->children->line_no);
+                reportError(errors,buf);
+            }
         }
 
         temp = temp->next;
     }
-    printSymbolTable();
 }

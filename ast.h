@@ -8,4 +8,6 @@ astnode convert(astnode term,struct narytree* exprime);
 void processAstNode(struct narytree *parsetree);
 void generateTree(struct narytree*parseTree);
 struct astNode initAST(struct narytree * parseTree);
-void printAST(struct astNode);
+void printAST(astnode ast,astnode par);
+int getastnodes();
+void freeAST(astnode ast);

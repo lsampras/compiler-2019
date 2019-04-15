@@ -16,9 +16,81 @@ struct idNode  *global[IDSIZE];
 
 Rnode checkRecords(char * recid);
 
-// Id Table funcs
+
 
 // global[IDSIZE] == NULL
+void freeIdnode(idnode a){
+    if(a == NULL){
+        return;
+    }
+    freeIdnode(a->next);
+    free(a->id);
+}
+void freeGlobalTable(){
+    int i=0;
+    for(;i<IDSIZE;i++){
+        if(global[i]!=NULL){
+            freeIdnode(global[i]);
+            free(global[i]);
+            global[i]=NULL;
+        }
+    }
+}
+
+// Id Table funcs
+void freerecords(Rnode rec);
+void freerecords(Rnode rec){
+    if(rec == NULL){
+        return;
+    }
+    free(rec->next);
+    free(rec->typeclass);
+    free(rec);
+}
+void freerecordtable(){
+    int i=0;
+    for(;i<RECSIZE;i++){
+        if(Records[i]!=NULL){
+            freerecords(Records[i]);
+            // free(Records[i]);
+            Records[i]=NULL;
+        }
+    }
+}
+void freeIdTable(IdTable scope){
+    
+    int i=0;
+    for(;i<IDSIZE;i++){
+        if(scope[i]!=NULL){
+            freeIdnode(scope[i]);
+            free(scope[i]);
+            scope[i]==NULL;
+        }
+    }
+}
+
+
+void freesymtnode(SymNode sym);
+void freesymtnode(SymNode sym){
+    if(sym==NULL){
+        return;
+    }
+    freesymtnode(sym->next);
+    free(sym->id);
+    free(sym);
+}
+
+void freeBigTable(){
+    int i = 0;
+    for(;i<SYMSIZE;i++){
+        if(Symbols[i]!=NULL){
+            freesymtnode(Symbols[i]);
+            freeIdTable(Symbols[i]->scope);
+            // free(Symbols[i]);
+            Symbols[i] = NULL;
+        }
+    }
+}
 
 
 idnode checkId(char * id,IdTable scope){
@@ -174,7 +246,11 @@ enum types getRecSubType(Rnode rec,char* field){
 //     return a;
 // }
 void addToIdTable(IdTable scope,astnode var,ErrorList errors,int* offset){
-
+    if(var->children->next->next !=NULL){
+        //global keyword exists
+        // already added in global table
+        return;
+    }
     if(checkId(var->children->next->lex,scope) != NULL || checkId(var->children->next->lex,global)!=NULL){
         //error for duplicate var
         char * buf = (char*)calloc(MAX_ERROR_LENGTH,sizeof(char));
@@ -192,7 +268,7 @@ void addToIdTable(IdTable scope,astnode var,ErrorList errors,int* offset){
     var->children->next->current_scope = scope;
     node->assigned = false;
     node->updated = false;
-    node->next = NULL;
+    node->offset = *offset;
     node->rec = NULL;
     
     if(var->children->label.is_leaf && var->children->label.data.term == RECORD){
@@ -282,7 +358,7 @@ SymNode addToSymbolTable(astnode func,ErrorList errors){
     }else if(!func->label.is_leaf && func->label.data.nonterm == mainFunction){
         dec = func->children->next->children;
         a->id = (char*)calloc(6,sizeof(char));
-        a->id = "_main";
+        sprintf(a->id,"_main");
     }
     while(dec!=NULL){
         addToIdTable(a->scope,dec,errors,&(a->width));
@@ -308,9 +384,7 @@ SymNode getSymNode(char * funid){
 }
 
 
-void addToGlobal(astnode var,int * offset,ErrorList errors){
-
-    if(checkId(var->children->next->lex,global)!=NULL){
+void addToGlobal(astnode var,int * offset,ErrorList errors){    if(checkId(var->children->next->lex,global)!=NULL){
         //error for duplicate var
         char * buf = (char*)calloc(MAX_ERROR_LENGTH,sizeof(char));
         sprintf(buf,"Line %d : Global variable <%s> already declared \n",var->children->next->line_no,var->children->next->lex);
@@ -403,14 +477,13 @@ void printrecord(Rnode record){
     Rec temp = record->child;
     while(temp!=NULL){
         if(temp->type == INTEGER){
-            printf("INT-");
+            printf("INT,");
         }else{
-            printf("REAL-");
+            printf("REAL,");
         }
-        printf("%s\t",temp->id);
         temp = temp->next;
     }
-    printf("\n");
+    printf("\t\t%d\n",record->width);
     if(record->next !=NULL){
         printrecord(record->next);
     }
@@ -428,28 +501,35 @@ void printrecordtable(){
 }
 
 
-void printglobal(idnode global){
-    printf("%s\t\t",global->id);
+void printId(idnode global){
+    char type[20]; 
+    char recname[10] = "---";
+    // printf("%s\t\t",global->id);
     if(global->type == REALT){
-        printf("type:REAL\t");
+        sprintf(type,"RNUM");
     }
     if(global->type == INTEGER){
-        printf("type:INT\t");
+        sprintf(type,"NUM");
     }
     if(global->type == RECORDT){
-        printf("type:RECORD\t");
+        sprintf(type," ");
+        sprintf(recname,("%s"),global->rec->typeclass);
+        Rec temp = global->rec->child;
+        // temp->
+        while(temp!=NULL){
+            if(temp->type == REALT){
+                sprintf(type,"%sRNUM,",type);
+            }
+            if(temp->type == INTEGER){
+                sprintf(type,"%sNUM,",type);
+            }
+            temp = temp->next;
+        }
     }
-    if(global->assigned){
-        printf("assigned\t");
-    }else{
-        printf("not assigned\t");
-    }
-    if(global->rec!=NULL){
-        printf("rec type%s",global->rec->typeclass);
-    }
-    printf("\n");
+    printf("%-10s  %-30s  %-20s\n",global->id,type,recname);
+    
     if(global->next!=NULL){
-        printglobal(global->next);
+        printId(global->next);
     }
 
 }
@@ -459,7 +539,7 @@ void printGlobalTable(){
     int i=0;
     for(;i<IDSIZE;i++){
         if(global[i]!=NULL){
-            printglobal(global[i]);
+            printId(global[i]);
         }
     }
     printf("--End Of GLobal Table--\n\n");
@@ -472,7 +552,7 @@ void printIdTable(IdTable scope,char* id){
     int i=0;
     for(;i<IDSIZE;i++){
         if(scope[i]!=NULL){
-            printglobal(scope[i]);
+            printId(scope[i]);
         }
     }
     printf("--End Of ID Table--\n\n");
@@ -485,4 +565,15 @@ void printSymbolTable(){
             printIdTable(Symbols[i]->scope,Symbols[i]->id);
         }
     }
+}
+
+void printfuncsize(){
+    int i = 0;
+    printf("printing funcs and their total size\n");
+    for(;i<SYMSIZE;i++){
+        if(Symbols[i]!=NULL){
+            printf("%-20s\t\t%d\n",Symbols[i]->id,Symbols[i]->width);
+        }
+    }
+    printf("---------------\n");
 }

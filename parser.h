@@ -11,9 +11,12 @@
 void seedSymbolTable();
 void ComputeFirstAndFollowSets();
 void initParseTable();
-void printTree(FILE * a);
+void printTree();
 void printFirstFollow();
 struct narytree* initTree();
 void readGrammar(char * file);
 void freesymbolTable();
 void freeGrammar();
+bool parseSuccess();
+void freeparsetree(struct narytree *n);
+int getParsenodes();
