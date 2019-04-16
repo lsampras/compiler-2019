@@ -1,3 +1,8 @@
+/*  GROUP 2
+    SAMPRAS LOPES - 2016A7PS0125P
+    LAKSH NANWANI - 2016A7PS0044P
+    MEHAK BINDRA - 2016B5A70685P
+*/
 #ifndef SYMDEF
 #define SYMDEF
 #include<stdio.h>
@@ -6,6 +11,7 @@
 #define IDSIZE 100
 #define SYMSIZE 100
 #define RECSIZE 100
+
 
 enum types{
     INTEGER,
@@ -59,6 +65,9 @@ typedef struct symnode{
 }* SymNode;
 
 typedef struct symnode SymTable;
+
+extern SymTable *Symbols[];
+extern recTable *Records[];
 
 #else
 #endif

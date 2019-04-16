@@ -1,4 +1,8 @@
-
+/*  GROUP 2
+    SAMPRAS LOPES - 2016A7PS0125P
+    LAKSH NANWANI - 2016A7PS0044P
+    MEHAK BINDRA - 2016B5A70685P
+*/
 #include"astdef.h"
 #include"symtabledef.h"
 #include"lexer.h"
@@ -227,6 +231,17 @@ enum types getRecSubType(Rnode rec,char* field){
     while(temp!=NULL){
         if(strcmp(temp->id,field)==0){
             return temp->type;
+        }
+        temp = temp->next;
+    }
+    return -1;
+}
+
+int getRecSubOffset(Rnode rec,char* field){
+    Rec temp = rec->child;
+    while(temp!=NULL){
+        if(strcmp(temp->id,field)==0){
+            return temp->offset;
         }
         temp = temp->next;
     }
@@ -501,7 +516,7 @@ void printrecordtable(){
 }
 
 
-void printId(idnode global){
+void printId(idnode global,char*id){
     char type[20]; 
     char recname[10] = "---";
     // printf("%s\t\t",global->id);
@@ -526,10 +541,16 @@ void printId(idnode global){
             temp = temp->next;
         }
     }
-    printf("%-10s  %-30s  %-20s\n",global->id,type,recname);
+    if(id == NULL){
+
+        printf("%-10s  %-30s  %-20s\n",global->id,type,recname);
+    }else{
+        printf("%-10s  %-30s %-30s %-20s\n",global->id,type,id,recname);
+
+    }
     
     if(global->next!=NULL){
-        printId(global->next);
+        printId(global->next,id);
     }
 
 }
@@ -539,7 +560,7 @@ void printGlobalTable(){
     int i=0;
     for(;i<IDSIZE;i++){
         if(global[i]!=NULL){
-            printId(global[i]);
+            printId(global[i],NULL);
         }
     }
     printf("--End Of GLobal Table--\n\n");
@@ -548,14 +569,14 @@ void printGlobalTable(){
 
 void printIdTable(IdTable scope,char* id){
     // if(scope)
-    printf("\n--Printing ID Table of %s--\n",id);
+    // printf("\n--Printing ID Table of %s--\n",id);
     int i=0;
     for(;i<IDSIZE;i++){
         if(scope[i]!=NULL){
-            printId(scope[i]);
+            printId(scope[i],id);
         }
     }
-    printf("--End Of ID Table--\n\n");
+    // printf("--End Of ID Table--\n\n");
 }
 
 void printSymbolTable(){

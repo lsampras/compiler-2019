@@ -13,7 +13,7 @@
 int main(int argc,char ** argv){
 
     if(argc!=3){
-        printf("invalid number of arguments\nUsage: ./stage1exe testcase.txt code.nasm");
+        printf("invalid number of arguments\nUsage: ./stage1exe testcase.txt code.asm");
         return 1;
     }
 
@@ -23,7 +23,7 @@ int main(int argc,char ** argv){
     double total_CPU_time, total_CPU_time_in_seconds;
     struct narytree* p;
     struct astNode ast;
-    printf("\n\nBoth Lexical and Syntax Analysis Modules Implemented\n - with error handling\n\n");
+    printf("Level 4: 16 semantic errors checked\nCode generation not working\n");
     int opt = -1;
     do{
         printf("\nEnter Option:");
@@ -302,6 +302,8 @@ int main(int argc,char ** argv){
             break;
     
         case 9://print semantic errors
+            start_time = clock();
+            // invoke your lexer and parser here
             in = fopen(argv[1],"rb");
             // parsetree = fopen(argv[2],"wb");
             getStream(in);
@@ -348,6 +350,12 @@ int main(int argc,char ** argv){
             freeGrammar();
             // fclose(parsetree);
             fclose(in);
+
+            end_time = clock();
+            total_CPU_time  =  (double) (end_time - start_time);
+            total_CPU_time_in_seconds =   total_CPU_time / CLOCKS_PER_SEC ;
+            printf("total_CPU_time %f\n",total_CPU_time);
+            printf("total_CPU_time_in_seconds %f\n",total_CPU_time_in_seconds);
             break;
 
 

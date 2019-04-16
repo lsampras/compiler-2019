@@ -1,3 +1,8 @@
+/*  GROUP 2
+    SAMPRAS LOPES - 2016A7PS0125P
+    LAKSH NANWANI - 2016A7PS0044P
+    MEHAK BINDRA - 2016B5A70685P
+*/
 #include"lexerDef.h"
 #include"lexer.h"
 #include"parserDef.h"
