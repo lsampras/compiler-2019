@@ -358,7 +358,9 @@ int main(int argc,char ** argv){
             printf("total_CPU_time_in_seconds %f\n",total_CPU_time_in_seconds);
             break;
 
+		case 10://codegen
 
+			break;
 
 
             default:
