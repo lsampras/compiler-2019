@@ -1,6 +1,6 @@
 # Compiler Construction
 
-The main objective of this project is to learn data structures via practice
+The main objective of this project is to learn data structures and memory management
 ---
 ##### Usage:
 	$ make clean
