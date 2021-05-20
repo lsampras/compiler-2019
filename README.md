@@ -1,6 +1,6 @@
-# Compiler Construction Project
+# Compiler Construction
 
-### Group-2
+The main objective of this project is to learn data structures via practice
 ---
 ##### Usage:
 	$ make clean
